@@ -3,7 +3,6 @@ import requests
 
 app = Flask(__name__)
 
-# واجهة الموقع وشريط التحميل
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -68,7 +67,7 @@ async function startBypass() {
     resultBox.style.display = 'none';
     progressWrapper.style.display = 'block';
     progressBar.style.width = '15%';
-    statusText.innerText = 'جاري البحث وتجربة الخوادم...';
+    statusText.innerText = 'جاري التخطي تجربة الخوادم...';
 
     let progress = 15;
     const interval = setInterval(() => {
@@ -97,13 +96,13 @@ async function startBypass() {
             }, 400);
         } else {
             progressWrapper.style.display = 'none';
-            alert(data.error || 'فشل التخطي عبر جميع الخوادم المتاحة');
+            alert(data.error || 'فشل التخطي عبر الخوادم الحالية');
             submitBtn.disabled = false;
         }
     } catch (e) {
         clearInterval(interval);
         progressWrapper.style.display = 'none';
-        alert('حدث خطأ بالاتصال');
+        alert('حدث خطأ بالاتصال بالخادم');
         submitBtn.disabled = false;
     }
 }
@@ -131,25 +130,25 @@ def bypass():
     if not url:
         return jsonify({'success': False, 'error': 'الرابط مفقود'}), 400
 
-    # مصفوفة الخوادم لتجربتها بالترتيب عند الفشل
+    # سيرفرات تخطي بديلة وتتحدث باستمرار
     apis = [
-        f"https://api.bypass.city/bypass?url={requests.utils.quote(url)}",
         f"https://api.bypass.vip/bypass?url={requests.utils.quote(url)}",
         f"https://adbypass.org/api/bypass?url={requests.utils.quote(url)}"
     ]
 
     for endpoint in apis:
         try:
-            res = requests.get(endpoint, timeout=6)
+            res = requests.get(endpoint, timeout=8)
             if res.status_code == 200:
                 data = res.json()
                 result = data.get('destination') or data.get('result') or data.get('url')
-                if result:
+                # التأكد من أن النتيجة ليست رسالة الخطأ الخاصة بـ Discord
+                if result and "discord" not in result.lower():
                     return jsonify({'success': True, 'result': result}), 200
         except Exception:
-            continue  # التنقل تلقائياً للـ API التالي عند الخطأ
+            continue
 
-    return jsonify({'success': False, 'error': 'تعذر التخطي عبر الخوادم، حاول مجدداً'}), 500
+    return jsonify({'success': False, 'error': 'جميع السيرفرات المجانية متوقفة حالياً، حاول مجدداً لاحقاً'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
